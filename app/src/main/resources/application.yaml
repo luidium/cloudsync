@@ -1,0 +1,10 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  config:
+    import: "optional:file:${CONFIG_PATH:~/.luidium-cloudsync/config.yaml}"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true

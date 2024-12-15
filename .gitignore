@@ -1,0 +1,10 @@
+.vscode
+
+.gradle
+
+build
+
+app/build
+app/bin
+
+config.yaml
