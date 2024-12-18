@@ -49,9 +49,13 @@ public class EventProcessingService {
     }
 
     private void handleEvent(String eventName, String bucketName, String objectKey) {
-        // DB에서 매핑된 로컬 디렉토리 가져오기
         ConnectionEntity connection = connectionRepository.findByBucketName(bucketName)
                 .orElseThrow(() -> new RuntimeException("No directory mapped to bucket: " + bucketName));
+
+        if (!connection.isActive()) {
+            System.out.printf("Ignoring event for inactive connection: %s/%s%n", bucketName, objectKey);
+            return;
+        }
 
         Path localDirectory = Paths.get(connection.getDirectoryPath());
         Path localFilePath = localDirectory.resolve(objectKey);
@@ -59,11 +63,9 @@ public class EventProcessingService {
         try {
             Map<String, String> metadata = minioClientService.getObjectMetadata(bucketName, objectKey);
 
-            System.out.printf(">>>>>>> Object metadata: %s%n", metadata);
-
             if ("cloudsync".equals(metadata.get("origin"))) {
                 System.out.printf("Ignoring event for file uploaded by CloudSync: %s/%s%n", bucketName, objectKey);
-                return; // CloudSync에서 업로드한 파일은 무시
+                return;
             }
         } catch (Exception e) {
             System.err.printf("Error getting object metadata: %s/%s. Details: %s%n", bucketName, objectKey, e.getMessage());
@@ -73,12 +75,10 @@ public class EventProcessingService {
             if (eventName.contains("s3:ObjectCreated")) {
                 System.out.printf("File created: %s/%s%n", bucketName, objectKey);
 
-                // Minio에서 파일 다운로드
                 downloadFromMinio(bucketName, objectKey, localFilePath);
             } else if (eventName.contains("s3:ObjectRemoved")) {
                 System.out.printf("File deleted: %s/%s%n", bucketName, objectKey);
 
-                // 로컬 파일 삭제
                 deleteLocalFile(localFilePath);
             }
         } catch (Exception e) {
@@ -87,13 +87,10 @@ public class EventProcessingService {
     }
 
     private void downloadFromMinio(String bucketName, String objectKey, Path localFilePath) throws Exception {
-        // Minio에서 파일 스트림 가져오기
         InputStream inputStream = minioClientService.getObject(bucketName, objectKey);
 
-        // 로컬 디렉토리 생성
         Files.createDirectories(localFilePath.getParent());
 
-        // 파일 저장
         try (FileOutputStream outputStream = new FileOutputStream(localFilePath.toFile())) {
             byte[] buffer = new byte[4096];
             int bytesRead;

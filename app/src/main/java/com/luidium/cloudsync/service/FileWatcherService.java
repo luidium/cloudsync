@@ -74,10 +74,8 @@ public class FileWatcherService {
         try {
             System.out.printf("Uploading file to Minio (Bucket: %s): %s%n", bucketName, filePath);
 
-            // 버킷이 없는 경우 생성
             ensureBucketExists();
 
-            // 파일 업로드
             minioClient.putObject(
                 PutObjectArgs.builder()
                     .bucket(bucketName)
@@ -98,7 +96,6 @@ public class FileWatcherService {
         try {
             System.out.printf("Deleting file from Minio (Bucket: %s): %s%n", bucketName, filePath);
 
-            // 파일 삭제
             minioClient.removeObject(
                 RemoveObjectArgs.builder()
                     .bucket(bucketName)

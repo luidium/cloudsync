@@ -1,5 +1,6 @@
 package com.luidium.cloudsync.service;
 
+import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
@@ -46,6 +47,14 @@ public class MinioClientService {
     }
 
     public void createBucketWithNotification(String bucketName) throws Exception {
+        if (minioClient.bucketExists(
+            BucketExistsArgs.builder()
+            .bucket(bucketName)
+            .build()
+        )) {
+            throw new RuntimeException("Bucket already exists");
+        }
+
         minioClient.makeBucket(
             MakeBucketArgs.builder()
             .bucket(bucketName)
